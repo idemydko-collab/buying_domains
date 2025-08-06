@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Test Project{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Welcome to Test Project</h1>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-blue-800 mb-3">🚀 Features</h2>
+                <ul class="space-y-2 text-gray-700">
+                    <li>• Django 5.0 with modern structure</li>
+                    <li>• Unfold Admin interface</li>
+                    <li>• Celery for background tasks</li>
+                    <li>• BetterStack logging</li>
+                    <li>• SQLite/PostgreSQL support</li>
+                </ul>
+            </div>
+            
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-green-800 mb-3">📋 Quick Links</h2>
+                <div class="space-y-3">
+                    <a href="/admin/" class="block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors text-center">
+                        Admin Panel
+                    </a>
+                    <a href="{% url 'brain:example_list' %}" class="block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors text-center">
+                        Examples
+                    </a>
+                    <a href="{% url 'brain:api_examples' %}" class="block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors text-center">
+                        API Examples
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div class="flex">
+                <div class="ml-3">
+                    <h3 class="text-lg font-medium text-yellow-800">Getting Started</h3>
+                    <p class="text-yellow-700 mt-1">
+                        Your Django project is ready! Visit the admin panel to start managing your data,
+                        or check the examples page to see the models in action.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

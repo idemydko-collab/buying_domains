@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Examples - Test Project{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Examples</h1>
+            <a href="{% url 'brain:home' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                Back to Home
+            </a>
+        </div>
+
+        {% if examples %}
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for example in examples %}
+                <div class="bg-gray-50 border rounded-lg p-4">
+                    <h3 class="font-semibold text-lg text-gray-800 mb-2">{{ example.title }}</h3>
+                    <p class="text-gray-600 text-sm mb-3">{{ example.description|truncatewords:20 }}</p>
+                    <div class="text-xs text-gray-500">
+                        <p>Created by: {{ example.created_by.username }}</p>
+                        <p>Created: {{ example.created_at|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="mt-6 flex justify-center">
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Previous</a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-1 bg-blue-600 text-white rounded">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        {% else %}
+            <div class="text-center py-8">
+                <div class="bg-gray-100 rounded-lg p-8">
+                    <h2 class="text-xl font-semibold text-gray-600 mb-2">No Examples Yet</h2>
+                    <p class="text-gray-500 mb-4">Get started by creating some examples in the admin panel.</p>
+                    <a href="/admin/brain/examplemodel/add/" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+                        Create Example
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
