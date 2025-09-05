@@ -173,38 +173,38 @@ if DEBUG:
     ]
 
 # BetterStack logging
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    'handlers': {
-        'logtail': {
-            'class': 'logtail.LogtailHandler',
-            'source_token': config('LOGTAIL_SOURCE_TOKEN', default=''),
-            'host': config('LOGTAIL_HOST', default='')
-        },
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
-            "level": "INFO",
-        },
-        "root": {
-            "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
-            "level": "DEBUG",
-        },
-        'celery': {
-            "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
-            "level": "DEBUG",
-        },
-        'apps': {
-            "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
-            "level": "DEBUG",
-        },
-    },
-}
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": True,
+#     'handlers': {
+#         'logtail': {
+#             'class': 'logtail.LogtailHandler',
+#             'source_token': config('LOGTAIL_SOURCE_TOKEN', default=''),
+#             'host': config('LOGTAIL_HOST', default='')
+#         },
+#         "console": {
+#             "class": "logging.StreamHandler",
+#         },
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
+#             "level": "INFO",
+#         },
+#         "root": {
+#             "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
+#             "level": "DEBUG",
+#         },
+#         'celery': {
+#             "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
+#             "level": "DEBUG",
+#         },
+#         'apps': {
+#             "handlers": ["logtail", "console"] if DEBUG else ["logtail"],
+#             "level": "DEBUG",
+#         },
+#     },
+# }
 
 # Unfold Admin Configuration
 UNFOLD = {

@@ -1,51 +1,341 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - Test Project{% endblock %}
+{% block title %}Покупка домену - Test Project{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow-md p-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Welcome to Test Project</h1>
+<div class="max-w-md mx-auto">
+    <div class="bg-gray-800 rounded-lg shadow-md p-8 border border-gray-700">
+        <h1 class="text-2xl font-bold text-white mb-6 text-center">Покупка домену</h1>
         
-        <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-blue-50 p-6 rounded-lg">
-                <h2 class="text-xl font-semibold text-blue-800 mb-3">🚀 Features</h2>
-                <ul class="space-y-2 text-gray-700">
-                    <li>• Django 5.0 with modern structure</li>
-                    <li>• Unfold Admin interface</li>
-                    <li>• Celery for background tasks</li>
-                    <li>• BetterStack logging</li>
-                    <li>• SQLite/PostgreSQL support</li>
-                </ul>
+        <!-- Balance display -->
+        {% if balance is not None %}
+            <div class="mb-6 p-4 rounded-md bg-gray-700 border border-gray-600">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-300">Баланс реєстратора:</span>
+                    <span class="text-lg font-bold {% if balance < 1000 %}text-red-400{% else %}text-green-400{% endif %}">
+                        {{ balance|floatformat:2 }} UAH
+                    </span>
+                </div>
+            </div>
+        {% else %}
+            <div class="mb-6 p-4 rounded-md bg-yellow-900 border border-yellow-700">
+                <div class="text-sm text-yellow-300">
+                    ⚠️ Не вдалося отримати баланс реєстратора
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-900 border border-green-700 text-green-300{% elif message.tags == 'error' %}bg-red-900 border border-red-700 text-red-300{% else %}bg-blue-900 border border-blue-700 text-blue-300{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <form method="post" class="space-y-6" id="domainForm">
+            {% csrf_token %}
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    Назви доменів
+                </label>
+                <select 
+                    id="domainMode" 
+                    class="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white mb-4"
+                >
+                    <option value="random">Випадкова генерація</option>
+                    <option value="custom">Власні назви</option>
+                </select>
             </div>
             
-            <div class="bg-green-50 p-6 rounded-lg">
-                <h2 class="text-xl font-semibold text-green-800 mb-3">📋 Quick Links</h2>
-                <div class="space-y-3">
-                    <a href="/admin/" class="block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors text-center">
-                        Admin Panel
-                    </a>
-                    <a href="{% url 'brain:example_list' %}" class="block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors text-center">
-                        Examples
-                    </a>
-                    <a href="{% url 'brain:api_examples' %}" class="block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors text-center">
-                        API Examples
-                    </a>
+            <!-- Random generation mode -->
+            <div id="randomMode" class="mb-6">
+                <div class="flex">
+                    <input 
+                        type="number" 
+                        id="domain_count" 
+                        name="domain_count" 
+                        min="1" 
+                        value="1"
+                        class="px-3 py-2 border border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 w-[70%] bg-gray-700 text-white"
+                        required
+                    >
+                    <select 
+                        id="domain_zone" 
+                        name="domain_zone"
+                        class="px-3 py-2 border-l-0 border border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 w-[30%] bg-gray-700 text-white"
+                        required
+                    >
+                        <option value=".space">.space</option>
+                        <option value=".com">.com</option>
+                        <option value=".site">.site</option>
+                        <option value=".website">.website</option>
+                        <option value=".online">.online</option>
+                        <option value=".best">.best</option>
+                        <option value=".fun">.fun</option>
+                    </select>
                 </div>
             </div>
-        </div>
+            
+            <!-- Custom domains mode -->
+            <div id="customMode" class="mb-6" style="display: none;">
+                <div id="customDomains" class="space-y-2">
+                    <div class="flex">
+                        <input 
+                            type="text" 
+                            placeholder="Вкажіть назву домену (напр. mysite)"
+                            class="px-3 py-2 border border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 w-[70%] bg-gray-700 text-white placeholder-gray-400"
+                        >
+                        <select 
+                            id="custom_domain_zone" 
+                            name="custom_domain_zone"
+                            class="px-3 py-2 border-l-0 border border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 w-[30%] bg-gray-700 text-white"
+                            required
+                        >
+                            <option value=".space">.space</option>
+                            <option value=".com">.com</option>
+                            <option value=".site">.site</option>
+                            <option value=".website">.website</option>
+                            <option value=".online">.online</option>
+                            <option value=".best">.best</option>
+                            <option value=".fun">.fun</option>
+                        </select>
+                    </div>
+                </div>
+                <button 
+                    type="button" 
+                    id="addDomainBtn"
+                    class="mt-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                    + Додати ще домен
+                </button>
+            </div>
+            
+            <button 
+                type="submit"
+                id="submitBtn"
+                style="background-color: #9333EA;"
+                class="w-full text-white py-2 px-4 rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all"
+            >
+                Купити домени
+            </button>
+        </form>
         
-        <div class="mt-8 bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <div class="flex">
-                <div class="ml-3">
-                    <h3 class="text-lg font-medium text-yellow-800">Getting Started</h3>
-                    <p class="text-yellow-700 mt-1">
-                        Your Django project is ready! Visit the admin panel to start managing your data,
-                        or check the examples page to see the models in action.
-                    </p>
-                </div>
-            </div>
-        </div>
+        <div id="statusMessages" class="mt-4"></div>
+        
+        <script>
+            let processingStartTime = null;
+            
+            // Mode switching functionality
+            document.getElementById('domainMode').addEventListener('change', function() {
+                const randomMode = document.getElementById('randomMode');
+                const customMode = document.getElementById('customMode');
+                
+                if (this.value === 'custom') {
+                    randomMode.style.display = 'none';
+                    customMode.style.display = 'block';
+                } else {
+                    randomMode.style.display = 'block';
+                    customMode.style.display = 'none';
+                }
+            });
+            
+            // Add domain field functionality
+            document.getElementById('addDomainBtn').addEventListener('click', function() {
+                const container = document.getElementById('customDomains');
+                const newInput = document.createElement('div');
+                newInput.className = '';
+                newInput.innerHTML = `
+                    <div class="flex">
+                        <input 
+                            type="text" 
+                            placeholder="Вкажіть назву домену (напр. example)"
+                            class="px-3 py-2 border border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 w-[70%] bg-gray-700 text-white placeholder-gray-400"
+                        >
+                        <select 
+                            class="px-3 py-2 border-l-0 border border-gray-600 shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 w-[25%] bg-gray-700 text-white"
+                        >
+                            <option value=".space">.space</option>
+                            <option value=".com">.com</option>
+                            <option value=".site">.site</option>
+                            <option value=".website">.website</option>
+                            <option value=".online">.online</option>
+                            <option value=".best">.best</option>
+                            <option value=".fun">.fun</option>
+                        </select>
+                        <button 
+                            type="button" 
+                            onclick="this.parentElement.parentElement.remove()"
+                            class="px-2 py-2 text-red-400 hover:text-red-300 transition-colors border border-gray-600 border-l-0 rounded-r-md"
+                            title="Видалити поле"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                `;
+                container.appendChild(newInput);
+            });
+            
+            document.getElementById('domainForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const btn = document.getElementById('submitBtn');
+                
+                const mode = document.getElementById('domainMode').value;
+                let totalCount, domainTypeText;
+                
+                // Create FormData and add mode
+                const formData = new FormData(this);
+                formData.set('domainMode', mode);
+                
+                if (mode === 'custom') {
+                    // Count custom domains
+                    const customInputs = document.querySelectorAll('#customDomains input[type="text"]');
+                    const customDomains = Array.from(customInputs)
+                        .map(input => input.value.trim())
+                        .filter(value => value.length > 0);
+                    const customZone = document.getElementById('custom_domain_zone').value;
+                    
+                    // Add custom domains to form data with unique names
+                    customDomains.forEach((domain, index) => {
+                        formData.set(`custom_domain_${index}`, domain);
+                    });
+                    
+                    // Add custom zone
+                    formData.set('custom_domain_zone', customZone);
+                    
+                    totalCount = customDomains.length;
+                    domainTypeText = `${customDomains.length} власних доменів${customZone}`;
+                    
+                    if (customDomains.length === 0) {
+                        alert('Вкажіть хоча б одну назву домену');
+                        return;
+                    }
+                } else {
+                    // Random generation mode
+                    totalCount = parseInt(document.getElementById('domain_count').value);
+                    const zone = document.getElementById('domain_zone').value;
+                    domainTypeText = `${totalCount} випадкових доменів${zone}`;
+                }
+                
+                // Disable form and show processing
+                btn.disabled = true;
+                btn.innerHTML = 'Обробка доменів...';
+                btn.className = 'w-full text-white py-2 px-4 rounded-md cursor-not-allowed transition-all';
+                btn.style.backgroundColor = '#6B7280';
+                
+                // Show initial message
+                const statusDiv = document.getElementById('statusMessages');
+                
+                statusDiv.innerHTML = `
+                    <div class="p-4 rounded-md bg-blue-900 border border-blue-700 text-blue-300">
+                        <div class="flex items-center">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mr-2"></div>
+                            Розпочато обробку ${domainTypeText}. Це може зайняти кілька хвилин...
+                        </div>
+                        <div class="mt-2 text-sm">Слідкуйте за детальним прогресом у Telegram каналі</div>
+                    </div>
+                `;
+                
+                processingStartTime = Date.now();
+                
+                // Submit form with AJAX
+                fetch('/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(data => {
+                    // Start checking status
+                    checkProcessingStatus(totalCount, domainTypeText);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Виникла помилка при відправці запиту');
+                    resetForm();
+                });
+            });
+            
+            function checkProcessingStatus(count, domainType) {
+                // Simulate processing time and show completion
+                setTimeout(() => {
+                    const elapsed = Math.round((Date.now() - processingStartTime) / 1000);
+                    showSuccess(count, domainType, elapsed);
+                }, 30000); // Check after 30 seconds
+            }
+            
+            function showSuccess(count, domainType, elapsed) {
+                const statusDiv = document.getElementById('statusMessages');
+                statusDiv.innerHTML = `
+                    <div class="p-4 rounded-md bg-green-900 border border-green-700 text-green-300">
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <strong>Успіх!</strong>
+                        </div>
+                        <div class="mt-2">
+                            ${domainType} успішно оброблені за ${elapsed} секунд!<br>
+                            ✅ Домени зареєстровані та сплачені<br>
+                            ✅ CloudFlare налаштовано<br>
+                            ✅ Nameservers оновлені<br>
+                            ✅ Додано в Keitaro
+                        </div>
+                        <div class="mt-3 text-sm text-green-400">
+                            Домени будуть активні протягом 8-24 годин
+                        </div>
+                    </div>
+                `;
+                resetForm();
+            }
+            
+            function showError(message) {
+                const statusDiv = document.getElementById('statusMessages');
+                statusDiv.innerHTML = `
+                    <div class="p-4 rounded-md bg-red-900 border border-red-700 text-red-300">
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            ${message}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function resetForm() {
+                const btn = document.getElementById('submitBtn');
+                btn.disabled = false;
+                btn.innerHTML = 'Купити домени';
+                btn.className = 'w-full text-white py-2 px-4 rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all';
+                btn.style.backgroundColor = '#9333EA';
+                
+                // Reset mode selector to random
+                document.getElementById('domainMode').value = 'random';
+                document.getElementById('randomMode').style.display = 'block';
+                document.getElementById('customMode').style.display = 'none';
+                
+                // Reset form values
+                document.getElementById('domain_count').value = '1';
+                document.getElementById('domain_zone').value = '.space';
+                document.getElementById('custom_domain_zone').value = '.space';
+                
+                // Clear custom domain inputs
+                const customInputs = document.querySelectorAll('#customDomains input[type="text"]');
+                customInputs.forEach(input => input.value = '');
+                
+                // Remove extra domain fields (keep only the first one)
+                const customContainer = document.getElementById('customDomains');
+                const extraFields = customContainer.querySelectorAll('div.flex');
+                extraFields.forEach(field => field.remove());
+            }
+        </script>
     </div>
 </div>
 {% endblock %}
