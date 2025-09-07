@@ -263,35 +263,143 @@
             });
             
             function checkProcessingStatus(count, domainType) {
-                // Simulate processing time and show completion
+                const checkInterval = setInterval(() => {
+                    fetch('/api/domain-status/')
+                        .then(response => response.json())
+                        .then(data => {
+                            const recentDomains = data.domains.slice(0, count);
+                            const completed = recentDomains.filter(d => d.status === 'completed').length;
+                            const failed = recentDomains.filter(d => d.status === 'ns_failed').length;
+                            const pending = count - completed - failed;
+                            
+                            const elapsed = Math.round((Date.now() - processingStartTime) / 1000);
+                            
+                            // Update status message
+                            updateStatusMessage(completed, pending, failed, count, domainType, elapsed);
+                            
+                            // Check if all domains are processed
+                            if (completed + failed >= count) {
+                                clearInterval(checkInterval);
+                                showFinalResult(completed, failed, count, domainType, elapsed);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Status check error:', error);
+                        });
+                }, 10000); // Check every 10 seconds
+                
+                // Stop checking after 20 minutes
                 setTimeout(() => {
-                    const elapsed = Math.round((Date.now() - processingStartTime) / 1000);
-                    showSuccess(count, domainType, elapsed);
-                }, 30000); // Check after 30 seconds
+                    clearInterval(checkInterval);
+                    showError('Перевищено час очікування (20 хвилин). Перевірте Telegram для деталей.');
+                    resetForm();
+                }, 20 * 60 * 1000);
             }
             
-            function showSuccess(count, domainType, elapsed) {
+            function updateStatusMessage(completed, pending, failed, total, domainType, elapsed) {
                 const statusDiv = document.getElementById('statusMessages');
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                const timeStr = minutes > 0 ? `${minutes}хв ${seconds}с` : `${seconds}с`;
+                
                 statusDiv.innerHTML = `
-                    <div class="p-4 rounded-md bg-green-900 border border-green-700 text-green-300">
+                    <div class="p-4 rounded-md bg-blue-900 border border-blue-700 text-blue-300">
                         <div class="flex items-center">
-                            <svg class="h-4 w-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <strong>Успіх!</strong>
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mr-2"></div>
+                            <strong>Обробка доменів...</strong>
                         </div>
                         <div class="mt-2">
-                            ${domainType} успішно оброблені за ${elapsed} секунд!<br>
-                            ✅ Домени зареєстровані та сплачені<br>
-                            ✅ CloudFlare налаштовано<br>
-                            ✅ Nameservers оновлені<br>
-                            ✅ Додано в Keitaro
+                            <div class="flex justify-between text-sm mb-2">
+                                <span>Прогрес: ${completed + failed}/${total}</span>
+                                <span>Час: ${timeStr}</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: ${((completed + failed) / total) * 100}%"></div>
+                            </div>
+                            <div class="mt-3 text-xs space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-green-400">✅ Завершено:</span>
+                                    <span class="text-green-400">${completed}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-yellow-400">⏳ Обробляється:</span>
+                                    <span class="text-yellow-400">${pending}</span>
+                                </div>
+                                ${failed > 0 ? `
+                                <div class="flex justify-between">
+                                    <span class="text-red-400">❌ Помилки:</span>
+                                    <span class="text-red-400">${failed}</span>
+                                </div>
+                                ` : ''}
+                            </div>
                         </div>
-                        <div class="mt-3 text-sm text-green-400">
-                            Домени будуть активні протягом 8-24 годин
-                        </div>
+                        <div class="mt-2 text-sm text-blue-400">Слідкуйте за детальним прогресом у Telegram каналі</div>
                     </div>
                 `;
+            }
+            
+            function showFinalResult(completed, failed, total, domainType, elapsed) {
+                const statusDiv = document.getElementById('statusMessages');
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                const timeStr = minutes > 0 ? `${minutes}хв ${seconds}с` : `${seconds}с`;
+                
+                if (failed === 0) {
+                    // Complete success
+                    statusDiv.innerHTML = `
+                        <div class="p-4 rounded-md bg-green-900 border border-green-700 text-green-300">
+                            <div class="flex items-center">
+                                <svg class="h-4 w-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <strong>Повний успіх!</strong>
+                            </div>
+                            <div class="mt-2">
+                                ${domainType} успішно оброблені за ${timeStr}!<br>
+                                ✅ Домени зареєстровані та сплачені<br>
+                                ✅ CloudFlare налаштовано<br>
+                                ✅ Nameservers оновлені<br>
+                                ✅ Додано в Keitaro
+                            </div>
+                            <div class="mt-3 text-sm text-green-400">
+                                Домени будуть активні протягом 8-24 годин
+                            </div>
+                        </div>
+                    `;
+                } else if (completed > 0) {
+                    // Partial success
+                    statusDiv.innerHTML = `
+                        <div class="p-4 rounded-md bg-yellow-900 border border-yellow-700 text-yellow-300">
+                            <div class="flex items-center">
+                                <svg class="h-4 w-4 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <strong>Часткий успіх</strong>
+                            </div>
+                            <div class="mt-2">
+                                Завершено за ${timeStr}: ${completed} успішно, ${failed} з помилками<br>
+                                Перевірте Telegram канал для деталей про помилки
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Complete failure
+                    statusDiv.innerHTML = `
+                        <div class="p-4 rounded-md bg-red-900 border border-red-700 text-red-300">
+                            <div class="flex items-center">
+                                <svg class="h-4 w-4 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <strong>Помилка обробки</strong>
+                            </div>
+                            <div class="mt-2">
+                                Жоден домен не вдалося обробити успішно за ${timeStr}.<br>
+                                Перевірте Telegram канал для деталей
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 resetForm();
             }
             

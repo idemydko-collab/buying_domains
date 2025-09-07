@@ -43,7 +43,7 @@ def home(request):
                 
                 messages.info(
                     request,
-                    f'Розпочато обробку {len(custom_domains)} власних доменів. Слідкуйте за прогресом у Telegram каналі.'
+                    f'Поставлено в чергу {len(custom_domains)} власних доменів. Слідкуйте за прогресом у Telegram каналі.'
                 )
                 
                 # Process custom domains in background thread
@@ -69,7 +69,7 @@ def home(request):
                 
                 messages.info(
                     request,
-                    f'Розпочато обробку {domain_count} випадкових доменів. Слідкуйте за прогресом у Telegram каналі.'
+                    f'Поставлено в чергу {domain_count} випадкових доменів. Слідкуйте за прогресом у Telegram каналі.'
                 )
                 
                 # Process random domains in background thread
@@ -125,3 +125,37 @@ def api_examples(request):
     )
     Logger(f"API examples accessed, returning {len(examples)} examples", "info")
     return JsonResponse(list(examples), safe=False)
+
+
+def domain_status(request):
+    """API endpoint to check domain processing status"""
+    try:
+        # Get recent domains (last 24 hours)
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        recent_time = timezone.now() - timedelta(hours=24)
+        recent_domains = Domain.objects.filter(created_at__gte=recent_time).order_by('-created_at')
+        
+        status_data = {
+            'total_processing': recent_domains.count(),
+            'completed': recent_domains.filter(status='completed').count(),
+            'pending': recent_domains.filter(status__in=['pending', 'ns_pending']).count(),
+            'failed': recent_domains.filter(status__in=['ns_failed', 'failed']).count(),
+            'domains': []
+        }
+        
+        for domain in recent_domains[:20]:  # Last 20 domains
+            status_data['domains'].append({
+                'name': domain.name,
+                'status': domain.status,
+                'created_at': domain.created_at.isoformat(),
+                'keitaro_added': domain.keitaro_added
+            })
+        
+        Logger(f"Domain status API accessed, returning data for {recent_domains.count()} domains", "info")
+        return JsonResponse(status_data)
+        
+    except Exception as e:
+        Logger(f"Error in domain status API: {str(e)}", "error")
+        return JsonResponse({'error': 'Failed to get domain status'}, status=500)
